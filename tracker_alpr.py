@@ -368,8 +368,8 @@ def tracker_test_vid_with_deep_sort(vid_dir,out_path):
                             txt = str(track_id) + ": " + str(ocr_resc) + '-' + str(rec_conf)
                             # txt = str(track_id) + ": "
                             # Vẽ bounding box và track id 
-                            cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
-                            cv2.putText(img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                            cv2.rectangle(overlay_img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                            cv2.putText(overlay_img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                                 # cv2.putText(img, str(rec_conf), (int(x1) + 150, int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)   
                                             
                     except Exception as e:
