@@ -6,12 +6,10 @@ import numpy as np
 from paddleocr import PaddleOCR
 from collections import defaultdict
 from tracker import Tracker
-
+from collections import Counter
 
 import datetime
-from ultralytics import YOLO
-import cv2
-from deep_sort_realtime.deepsort_tracker import DeepSort
+
 
 ocr = PaddleOCR(lang='en',rec_algorithm='CRNN')
 # Load a model
@@ -220,16 +218,23 @@ def validate_plate(str_plate):
     else:
         return None
 
-def save_infor_file(name_file, data):
-    with open(name_file, 'a') as file:
-        # Ghi tên các trường vào dòng đầu tiên
-        file.write("Track_id\tRecognized_text\tConfidence\n")
+def save_info_file(name_folder, name_file, data):
+    # Kiểm tra nếu thư mục không tồn tại thì tạo mới
+    if not os.path.exists(name_folder):
+        os.makedirs(name_folder)
 
+    # Tạo đường dẫn đầy đủ đến tệp tin
+    file_path = os.path.join(name_folder, f"{name_file}.txt")
+
+    with open(file_path, 'a') as file:
+        
         # Thêm dữ liệu vào file
         for entry in data:
-            file.write(f"{entry[0]}\t{entry[1]}\t{entry[2]}\n")
+            file.write(f"{entry['Track_id']}\t{entry['Recognized_text']}\t{entry['Confidence']}\t{entry['Time']}\n")
+            # file.write(f"{entry['Track_id']}\t{entry['Recognized_text']}\t{entry['Confidence']}\n")
 
     print("Dữ liệu đã được thêm vào file.")
+
 
 def get_best_ocr(data, track_ids):
     counter_dict = Counter((item['track_id'], item['ocr_txt']) for item in data)
