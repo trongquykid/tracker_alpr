@@ -270,13 +270,19 @@ def tracker_test_vid_with_deep_sort(vid_dir,out_path):
 
     tracker = Tracker()
     preds = []
+
+    list_plate = []
+    name_plate = ""
+    time_out = ""
+
     # Initializing some helper variables.
     ct = 0
     preds = []
     total_obj = 0
-    CONFIDENCE_THRESHOLD = 0.5
+    CONFIDENCE_THRESHOLD = 0.3
     track_id_flag = 0
     # Reading video frame by frame.
+    time_folder = datetime.datetime.now().strftime("%Y-%m-%d")
     while(cap.isOpened()):
         ret, img = cap.read()
         if ret == True:
@@ -290,7 +296,6 @@ def tracker_test_vid_with_deep_sort(vid_dir,out_path):
             results = []
 
             datas = detections.boxes.data.tolist()
-
             
             for data in datas:
                 # Lấy ra conf của object detection
@@ -301,7 +306,7 @@ def tracker_test_vid_with_deep_sort(vid_dir,out_path):
 
                     # get the bounding box and the class id
                     xmin, ymin, xmax, ymax = int(data[0]), int(data[1]), int(data[2]), int(data[3])
-                    print("Toạ do 1: ",xmin, ymin, xmax, ymax)
+                    # print("Toạ do 1: ",xmin, ymin, xmax, ymax)
                     class_id = int(data[5])
 
                     # Thêm bounding box(x, y, w, h) và conf vào list
@@ -369,31 +374,29 @@ def tracker_test_vid_with_deep_sort(vid_dir,out_path):
                             print("ocr_conf: ",ocr_conf)
 
                             output_frame = {"track_id": track_id, "ocr_txt": recognized_text, "ocr_conf": ocr_conf}
+                            preds.append(output_frame)
 
-                            # Thêm track_id vào list, nếu nó không tồn tại trong list.
-                            if track_id not in list(set(ele['track_id'] for ele in preds)):
-                                total_obj = total_obj + 1
-                                preds.append(output_frame)
-                            
-                            else:
-                                # Tìm kiếm track hiện tại trong list và update conf cao nhất của nó
-                                preds, rec_conf, ocr_resc = get_best_ocr(preds, ocr_conf, recognized_text, track_id)
+                            if track_id in list(set(ele['track_id'] for ele in preds)):
 
-                            current_time = datetime.datetime.now().strftime("%Y%m%d")
+                                rec_conf, ocr_resc = get_best_ocr(preds, track_id)
                             
-                            if track_id != track_id_flag:
-                                save_infor_file(f"./save_file_txt/{current_time}.txt", [(track_id, ocr_resc, rec_conf)])
+                                ocr_resc_test = validate_plate(recognized_text)
+
+                                current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                
+                                if ocr_resc_test != None and current_time != time_out:
+
+                                    list_plate.append({'Track_id': track_id, 'Recognized_text': ocr_resc_test, 'Confidence': ocr_conf, "Time": current_time})
+                                    save_info_file(f"./save_file_txt/{time_folder}", ocr_resc_test, [{'Track_id': track_id, 'Recognized_text': ocr_resc_test, 'Confidence': rec_conf, 'Time': current_time}])
+                                    time_out = current_time
+
+                                txt = str(track_id) + ": " + str(ocr_resc) + '-' + str(rec_conf)
+                                # Vẽ bounding box và track id 
+                                cv2.rectangle(overlay_img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                                cv2.putText(overlay_img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)   
+                                cv2.putText(overlay_img, str(ocr_resc_test), (int(x1), int(y1) + 75), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                             else:
                                 continue
-                            track_id_flag = track_id
-
-                            txt = str(track_id) + ": " + str(ocr_resc) + '-' + str(rec_conf)
-                            # txt = str(track_id) + ": "
-                            # Vẽ bounding box và track id 
-                            cv2.rectangle(overlay_img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
-                            cv2.putText(overlay_img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                                # cv2.putText(img, str(rec_conf), (int(x1) + 150, int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)   
-                                            
                     except Exception as e:
                         continue
                 else:
