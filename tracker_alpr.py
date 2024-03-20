@@ -211,6 +211,15 @@ def test_vid_yolov8(vid_dir, out_path):
         else:
             break
 
+def validate_plate(str_plate):
+
+    regex_pattern = r'^\d{2}(-[A-HK-PR-Z]{2}|-[A-HK-PR-Z]{1}\d{1}|[A-HK-PR-Z]{1})[- ]?((?!000\.00)([0-9]\d{0,2}|0)\.\d{2}|[0-9]{4})$'  # [- ]?
+
+    if re.match(regex_pattern, str_plate):
+        return str_plate
+    else:
+        return None
+
 def save_infor_file(name_file, data):
     with open(name_file, 'a') as file:
         # Ghi tên các trường vào dòng đầu tiên
