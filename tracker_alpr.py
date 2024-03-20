@@ -231,19 +231,27 @@ def save_infor_file(name_file, data):
 
     print("Dữ liệu đã được thêm vào file.")
 
-def get_best_ocr(preds, rec_conf, ocr_res, track_id):
-    for info in preds:
-        # Check if it is the current track id.
-        if info['track_id'] == track_id:
-            # Check if the ocr confidence is highest or not.
-            if info['ocr_conf'] < rec_conf:
-                info['ocr_conf'] = rec_conf
-                info['ocr_txt'] = ocr_res
-            else:
-                rec_conf = info['ocr_conf']
-                ocr_res = info['ocr_txt']
-            break
-    return preds, rec_conf, ocr_res
+def get_best_ocr(data, track_ids):
+    counter_dict = Counter((item['track_id'], item['ocr_txt']) for item in data)
+
+    most_common_recognized_text = {}
+    rec_conf = ""
+    ocr_res = ""
+    for item in data:
+        track_id = item['track_id']
+        recognized_text = item['ocr_txt']
+        confidence = item['ocr_conf']
+        count = counter_dict[(track_id, recognized_text)]
+
+        current_count, current_confidence, current_text = most_common_recognized_text.get(track_id, (0, 0, ''))
+
+        if count > current_count or (count == current_count and confidence > current_confidence):
+            most_common_recognized_text[track_id] = (count, confidence, recognized_text)
+
+    if track_ids in most_common_recognized_text:
+        rec_conf, ocr_res = most_common_recognized_text[track_ids][1], most_common_recognized_text[track_ids][2]
+
+    return rec_conf, ocr_res
 
 def tracker_test_vid_with_deep_sort(vid_dir,out_path):
     # Declaring variables for video processing.
