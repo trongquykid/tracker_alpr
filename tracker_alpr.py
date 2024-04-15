@@ -6,8 +6,8 @@ import numpy as np
 from paddleocr import PaddleOCR
 from collections import defaultdict
 from tracker import Tracker
-from collections import Counter
-
+from collections import Counters
+import re
 import datetime
 
 
@@ -438,8 +438,12 @@ def tracker_test_vid_with_yolo_track(vid_dir,out_path):
     ct = 0
     total_obj = 0
     alpha = 0.5
+    time_out = ""
 
+    list_plate = []
+    track_id_flag = 0
     # Reading video frame by frame.
+    time_folder = datetime.datetime.now().strftime("%Y-%m-%d")
     while(cap.isOpened()):
         ret, img = cap.read()
         if ret:
@@ -530,17 +534,31 @@ def tracker_test_vid_with_yolo_track(vid_dir,out_path):
                             print("ocr_conf: ",ocr_conf)
 
                             output_frame = {"track_id": track_id, "ocr_txt": recognized_text, "ocr_conf": ocr_conf}
+                            preds.append(output_frame)
 
-                            if track_id not in list(set(ele['track_id'] for ele in preds)):
-                                    total_obj = total_obj + 1
-                                    preds.append(output_frame)
-                                # Looking for the current track in the list and updating the highest confidence of it.
-                            else:
-                                preds, rec_conf, ocr_resc = get_best_ocr(preds, ocr_conf, recognized_text, track_id) 
+                            # Thêm track_id vào list, nếu tồn tại trong list.
+                            if track_id in list(set(ele['track_id'] for ele in preds)):
+
+                                rec_conf, ocr_resc = get_best_ocr(preds, track_id)
+                            
+                            ocr_resc_test = validate_plate(ocr_resc)
+
+                            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+                            
+                            if ocr_resc_test != None and current_time != time_out:
+
+                                list_plate.append({'Track_id': track_id, 'Recognized_text': ocr_resc_test, 'Confidence': ocr_conf, "Time": current_time})
+                                save_info_file(f"./save_file_txt/{time_folder}", ocr_resc_test, [{'Track_id': track_id, 'Recognized_text': ocr_resc_test, 'Confidence': rec_conf, 'Time': current_time}])
+                                time_out = current_time
 
                             txt = str(track_id) + ": " + str(ocr_resc) + '-' + str(rec_conf)
-                            cv2.rectangle(overlay_img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)  # Red bounding box
-                            cv2.putText(overlay_img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                            # txt = str(track_id) + ": "
+                            # Vẽ bounding box và track id 
+                            cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                            cv2.putText(img, txt, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                            
                     except Exception as e:
                         continue
                 else:
@@ -554,9 +572,9 @@ def tracker_test_vid_with_yolo_track(vid_dir,out_path):
             else:
                 size = 2
             
-            cv2.putText(overlay_img, 'frame: %d fps: %s' % (ct, int(fps)),
+            cv2.putText(img, 'frame: %d fps: %s' % (ct, int(fps)),
                         (0, int(100 * 1)), cv2.FONT_HERSHEY_SIMPLEX, size, (0, 0, 255), thickness=2)
-            out.write(overlay_img)
+            out.write(img)
             # Increasing frame count.
             ct = ct + 1
         else:
@@ -565,4 +583,5 @@ def tracker_test_vid_with_yolo_track(vid_dir,out_path):
 input_dir = './test_video/test_1.mp4'
 
 out_path = './results/test_1.mp4'
-tracker_test_vid_with_yolo_track(input_dir, out_path)
+# tracker_test_vid_with_deep_sorttest_vid_with_deep_sort_track(input_dir, out_path)
+tracker_test_vid_with_deep_sort(input_dir, out_path)
